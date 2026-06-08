@@ -1,3 +1,59 @@
+##
+# evaluate_qs_split_kfold.R — Evaluation and ROC construction
+#
+# Overview:
+# This script evaluates the SpaceTrooper query-score (QS) classifier on a
+# spatial transcriptomics dataset using either a single random split or
+# k-fold cross-validation. It trains a ridge-logistic model on pseudo-labelled
+# examples derived from QC outlier detection and then scores both training and
+# test cells with the fitted model.
+#
+# How the reference labels and model are built:
+# - Training examples are created by running `computeOutliersQCScore()` on the
+#   training cells and filtering variables with `checkOutliers()`.
+# - `computeTrainDF()` builds a balanced table of pseudo-bad (`qcscore_train = 0`)
+#   and pseudo-good (`qcscore_train = 1`) examples using the selected
+#   `formula_variables` and technology metadata.
+# - A design matrix is constructed via `model.matrix()` using the same model
+#   formula used for training. A ridge penalty (`lambda`) is estimated with
+#   `computeLambda()` and the model is fitted via `trainModel()`.
+# - The fitted model is applied with `score_subset()` which recreates the
+#   predictors for new cells and predicts `QC_score` (probability of being
+#   good-quality) using `predict(..., type = "response")` from the glmnet fit.
+#
+# ROC curve construction and AUC:
+# - The positive class for ROC/AUC is the bad-quality group (cells with
+#   `qcscore_train == 0`). To make larger scores correspond to the positive
+#   class, the decision score is computed as `1 - QC_score` (higher = worse).
+# - `auc_rank()` computes AUROC using the Mann–Whitney / rank-based formula
+#   (no extra packages required).
+# - `build_roc_df()` sorts test examples by `1 - QC_score` (decreasing), then
+#   computes cumulative true positives and false positives to produce discrete
+#   ROC points (TPR vs FPR). Ties are handled by ranking with average ties.
+# - In k-fold mode each fold yields its own ROC points; plotting overlays one
+#   curve per fold and reports the mean AUC across folds (computed from the
+#   per-fold summaries).
+#
+# Dataset splitting details:
+# - Single random split (`k_folds = 1`): `make_random_split(n_cells,
+#   train_fraction, seed)` samples `floor(n_cells * train_fraction)` cells at
+#   random (with `set.seed(seed)`) as the training set; the remainder are test
+#   cells. `train_fraction` must be strictly between 0 and 1.
+# - K-fold cross-validation (`k_folds > 1`): `make_fold_ids(n_cells,
+#   k_folds, seed)` shuffles the cells (with `set.seed(seed)`) and assigns them
+#   approximately evenly to the `k_folds` folds using `rep(1:k_folds, length.out = n_cells)`.
+#   Each fold is used once as the test set while the other folds are combined
+#   to form the training set. `train_fraction` is ignored when `k_folds > 1`.
+# - The seed parameter ensures reproducible splits in both modes.
+#
+# Additional notes:
+# - `safe_reference_labels()` wraps reference-label construction and returns a
+#   captured error message when a fold does not produce enough outliers to
+#   build labels (this prevents the entire run from stopping on that fold).
+# - The `threshold` parameter is used for computing classification summaries
+#   (sensitivity/specificity at `QC_score < threshold`) but does not affect
+#   model fitting.
+
 library(SpaceTrooper)
 library(SummarizedExperiment)
 library(S4Vectors)
