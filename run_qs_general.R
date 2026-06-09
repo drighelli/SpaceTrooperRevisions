@@ -15,17 +15,22 @@ devtools::load_all(package_path, quiet=FALSE)
 
 
 obj <- readRDS(input_rds)
-metadata(obj)$formula_variables <- c(log2CountArea="log2CountArea",
-                                        log2AspectRatio="log2AspectRatio")
+# metadata(obj)$formula_variables <- c(log2CountArea="log2CountArea",
+#                                          log2AspectRatio="log2AspectRatio")
 obj <- spatialPerCellQC(obj)
 
 metadata(obj)
-obj <- computeQCScore(obj)
 
-qc_nointeract <- obj$QC_score
-qc_interact <- obj$QC_score
-saveRDS(qc_nointeract, "~/SpaceTrooper_qs_check/qc_nointeract.rds")
-saveRDS(qc_interact, "~/SpaceTrooper_qs_check/qc_interact.rds")
+objint <- computeQCScore(obj)
+qc_interact <- objint$QC_score
+
+objnotint <- computeQCScore(obj, modelFormula = "~ log2SignalDensity + Area_um + I(abs(log2AspectRatio) * as.numeric(dist_border < 50)) + log2Ctrl_total_ratio")
+qc_nointeract <- objnotint$QC_score
+
+out_dir <- "~/SpaceTrooper_qs_check1/interaction_vs_nointeraction"
+dir.create(out_dir, showWarnings=FALSE, recursive=TRUE)
+saveRDS(qc_nointeract, file.path(out_dir, "qc_nointeract.rds"))
+saveRDS(qc_interact, file.path(out_dir, "qc_interact.rds"))
 
 library(ggplot2)
 
@@ -46,8 +51,8 @@ plot_qc <- ggplot(df, aes(x = qc_nointeract, y = qc_interact)) +
     title = "QC: no-interaction vs interaction"
   ) +
   theme_minimal() +
-  geom_hline(yintercept = 0.75) +
-  geom_vline(xintercept = 0.75) +
+#   geom_hline(yintercept = 0.75) +
+#   geom_vline(xintercept = 0.75) +
   annotate(
     "text",
     x = quantile(df$qc_nointeract, 0.99, na.rm = TRUE),
@@ -60,7 +65,14 @@ plot_qc <- ggplot(df, aes(x = qc_nointeract, y = qc_interact)) +
 plot_qc
 
 
-library(ggplot2)
+ggsave(
+    filename=file.path(out_dir,"qc_nointeraction_vs_interaction_A4_landscape.pdf"),
+    plot=plot_qc,
+    device="pdf",
+    width=11.69,
+    height=8.27,
+    units="in"
+)
 
 df <- data.frame(
     qc_nointeract=qc_nointeract,
@@ -86,62 +98,64 @@ df$quadrant <- with(
     )
 )
 
-table(df$quadrant)
+# table(df$quadrant)
 
-cor_val <- cor(
-    df$qc_nointeract,
-    df$qc_interact,
-    use="complete.obs",
-    method="pearson"
-)
+# cor_val <- cor(
+#     df$qc_nointeract,
+#     df$qc_interact,
+#     use="complete.obs",
+#     method="pearson"
+# )
 
-plot_qc <- ggplot(df, aes(x=qc_nointeract, y=qc_interact, color=quadrant)) +
-    geom_point(alpha=0.35, size=0.6) +
-    geom_abline(
-        slope=1,
-        intercept=0,
-        linetype="dashed",
-        color="red"
-    ) +
-    geom_hline(yintercept=threshold) +
-    geom_vline(xintercept=threshold) +
-    labs(
-        x="QC score (no interaction)",
-        y="QC score (with interaction)",
-        title="QC: no-interaction vs interaction",
-        color="Quadrant"
-    ) +
-    theme_minimal() +
-    annotate(
-        "text",
-        x=quantile(df$qc_nointeract, 0.99, na.rm=TRUE),
-        y=quantile(df$qc_interact, 0.01, na.rm=TRUE),
-        label=paste0("r = ", formatC(cor_val, digits=3, format="f")),
-        hjust=1,
-        vjust=0,
-        color="black"
-    )
+# plot_qc <- ggplot(df, aes(x=qc_nointeract, y=qc_interact, color=quadrant)) +
+#     geom_point(alpha=0.35, size=0.6) +
+#     geom_abline(
+#         slope=1,
+#         intercept=0,
+#         linetype="dashed",
+#         color="red"
+#     ) +
+#     geom_hline(yintercept=threshold) +
+#     geom_vline(xintercept=threshold) +
+#     labs(
+#         x="QC score (no interaction)",
+#         y="QC score (with interaction)",
+#         title="QC: no-interaction vs interaction",
+#         color="Quadrant"
+#     ) +
+#     theme_minimal() +
+#     annotate(
+#         "text",
+#         x=quantile(df$qc_nointeract, 0.99, na.rm=TRUE),
+#         y=quantile(df$qc_interact, 0.01, na.rm=TRUE),
+#         label=paste0("r = ", formatC(cor_val, digits=3, format="f")),
+#         hjust=1,
+#         vjust=0,
+#         color="black"
+#     )
 
-plot_qc
+# plot_qc
 
-plot_qc <- plot_qc +
-    scale_color_manual(
-        values=c(
-            "low / low"="grey60",
-            "high no-interaction / low interaction"="orange",
-            "low no-interaction / high interaction"="dodgerblue",
-            "high / high"="black"
-        )
-    )
+# plot_qc <- plot_qc +
+#     scale_color_manual(
+#         values=c(
+#             "low / low"="grey60",
+#             "high no-interaction / low interaction"="orange",
+#             "low no-interaction / high interaction"="dodgerblue",
+#             "high / high"="black"
+#         )
+#     )
 
-ggsave(
-    filename="~/SpaceTrooper_qs_check/qc_nointeraction_vs_interaction_A4_landscape.pdf",
-    plot=plot_qc,
-    device="pdf",
-    width=11.69,
-    height=8.27,
-    units="in"
-)
+# ggsave(
+#     filename="~/SpaceTrooper_qs_check/qc_nointeraction_vs_interaction_A4_landscape.pdf",
+#     plot=plot_qc,
+#     device="pdf",
+#     width=11.69,
+#     height=8.27,
+#     units="in"
+# )
+
+
 # get_coldata_df <- function(x) {
 #     cd <- SummarizedExperiment::colData(x)
 #     as.data.frame(cd)
