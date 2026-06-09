@@ -755,7 +755,9 @@ evaluate_qs_split <- function(
 # res_split_70_30 <- evaluate_qs_split(k_folds=1, train_fraction=0.70)
 # res_split_70_30$test_summary
 res_split <- evaluate_qs_split(k_folds=1, train_fraction=0.70)
-
+out_dir <- "~/SpaceTrooper_qs_check1/qs_split_70_30"
+dir.create(out_dir, showWarnings=FALSE, recursive=TRUE)
+saveRDS(res_split, file.path(out_dir, "res_split_70_30.rds"))
 plot_labelled_cells(res_split, dataset="train", size=0.08)
 plot_labelled_cells(res_split, dataset="test", size=0.08)
 
@@ -772,11 +774,14 @@ res_kfold_5$test_summary_per_fold
 res_kfold_5$test_summary_average
 res_kfold_5$test_label_errors
 
+saveRDS(res_kfold_5, file.path(out_dir, "res_5-fold.rds"))
 # Celle colorate good/bad sul test set del fold 1
 plot_labelled_cells(res_kfold_5, dataset="test", fold=1, size=0.1)
 #
 # ROC curve across folds
-plot_roc_eval(res_kfold_5, dataset="test")
+groc <- plot_roc_eval(res_kfold_5, dataset="test")
+ggsave(groc, filename=file.path(out_dir, "roc_across_folds_test.png"), width=6, height=5, dpi=300)
+groc
 #
 # AUC across folds
-plot_auc_across_folds(res_kfold_5, dataset="test")
+# plot_auc_across_folds(res_kfold_5, dataset="test")
