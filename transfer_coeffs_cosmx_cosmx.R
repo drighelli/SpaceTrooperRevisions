@@ -1,12 +1,12 @@
 ## ============================================================
 ## 0. Libraries and output directory
 ## ============================================================
-
-devtools::load_all()
+package_path <- "/Users/inzirio/My Drive/works/coding/SpaceTrooper"
+devtools::load_all(package_path)
 library(ggplot2)
 
-out_dir <- "~/SpaceTrooper_qs_check"
-
+out_dir <- "~/SpaceTrooper_qs_check1/cosmx_cosmx_transfer_check"
+dir.create(out_dir, showWarnings=FALSE, recursive=TRUE)
 set.seed(1998)
 
 
@@ -87,12 +87,14 @@ specosm_breast <- applyQCScoreModel(
     qcModel=pancreas_model,
     scoreName="QC_score_pancreas_model"
 )
+saveRDS(specosm_breast, file.path(out_dir, "specosm_breast_with_pancreas_model.rds"))
 
 specosm_pancreas <- applyQCScoreModel(
     spe=specosm_pancreas,
     qcModel=breast_model,
     scoreName="QC_score_breast_model"
 )
+saveRDS(specosm_pancreas, file.path(out_dir, "specosm_pancreas_with_breast_model.rds"))
 
 
 ## ============================================================
@@ -160,14 +162,14 @@ cor_pancreas_pearson
 ## ============================================================
 ## 9. Plot: Breast native QS vs Pancreas-trained QS
 ## ============================================================
-
+source("functions.R")
 res_breast <- plot_qc_score_comparison(
     x=specosm_breast$QC_score_breast_native,
     y=specosm_breast$QC_score_pancreas_model,
     x_label="Breast native QS",
     y_label="Pancreas-trained QS",
     title="CosMx Breast: native QS vs Pancreas-trained QS",
-    threshold=0.75,
+    threshold=NULL, #change to 0.75 if you want to visualize quadrants
     cor_method="spearman",
     output_file=file.path(
         out_dir,
@@ -177,8 +179,7 @@ res_breast <- plot_qc_score_comparison(
 
 res_breast$plot
 res_breast$correlation
-res_breast$quadrant_table
-
+#res_breast$quadrant_table
 
 ## ============================================================
 ## 10. Plot: Pancreas native QS vs Breast-trained QS
@@ -190,7 +191,7 @@ res_pancreas <- plot_qc_score_comparison(
     x_label="Pancreas native QS",
     y_label="Breast-trained QS",
     title="CosMx Pancreas: native QS vs Breast-trained QS",
-    threshold=0.75,
+    threshold=NULL, #change to 0.75 if you want to visualize quadrants
     cor_method="spearman",
     output_file=file.path(
         out_dir,
@@ -200,7 +201,7 @@ res_pancreas <- plot_qc_score_comparison(
 
 res_pancreas$plot
 res_pancreas$correlation
-res_pancreas$quadrant_table
+#res_pancreas$quadrant_table
 
 
 ## ============================================================
@@ -318,7 +319,6 @@ plot_qc_score_coldata <- function(x, y, spe, color_col,
     ))
 }
 
-
 res_breast_signal <- plot_qc_score_coldata(
     x=specosm_breast$QC_score_breast_native,
     y=specosm_breast$QC_score_pancreas_model,
@@ -327,9 +327,9 @@ res_breast_signal <- plot_qc_score_coldata(
     x_label="Breast native QS",
     y_label="Pancreas-trained QS",
     title="CosMx Breast: native QS vs Pancreas-trained QS",
-    threshold=0.75,
+    threshold=NULL, #change to 0.75 if you want to visualize quadrants
     cor_method="spearman",
-    output_file="~/SpaceTrooper_qs_check/cosmx_breast_native_vs_pancreas_model_colored_by_log2SignalDensity.pdf"
+    output_file=file.path(out_dir, "cosmx_breast_native_vs_pancreas_model_colored_by_log2SignalDensity.pdf")
 )
 
 res_breast_signal$plot
@@ -342,9 +342,9 @@ res_breast_area <- plot_qc_score_coldata(
     x_label="Breast native QS",
     y_label="Pancreas-trained QS",
     title="CosMx Breast: native QS vs Pancreas-trained QS",
-    threshold=0.75,
+    threshold=NULL, #change to 0.75 if you want to visualize quadrants
     cor_method="spearman",
-    output_file="~/SpaceTrooper_qs_check/cosmx_breast_native_vs_pancreas_model_colored_by_Area_um.pdf"
+    output_file=file.path(out_dir, "cosmx_breast_native_vs_pancreas_model_colored_by_Area_um.pdf")
 )
 
 res_breast_area$plot
@@ -357,9 +357,9 @@ res_breast_ctrl <- plot_qc_score_coldata(
     x_label="Breast native QS",
     y_label="Pancreas-trained QS",
     title="CosMx Breast: native QS vs Pancreas-trained QS",
-    threshold=0.75,
+    threshold=NULL, #change to 0.75 if you want to visualize quadrants
     cor_method="spearman",
-    output_file="~/SpaceTrooper_qs_check/cosmx_breast_native_vs_pancreas_model_colored_by_log2Ctrl_total_ratio.pdf"
+    output_file=file.path(out_dir, "cosmx_breast_native_vs_pancreas_model_colored_by_log2Ctrl_total_ratio.pdf")
 )
 
 res_breast_ctrl$plot
@@ -374,14 +374,29 @@ res_breast_aspect <- plot_qc_score_coldata(
     title="CosMx Breast: native QS vs Pancreas-trained QS",
     threshold=0.75,
     cor_method="spearman",
-    output_file="~/SpaceTrooper_qs_check/cosmx_breast_native_vs_pancreas_model_colored_by_log2AspectRatio.pdf"
+    output_file=file.path(out_dir, "cosmx_breast_native_vs_pancreas_model_colored_by_log2AspectRatio.pdf")
 )
 
 res_breast_aspect$plot
 
-SpaceTrooper::plotMetricHist(spe = specosm_breast, metric="log2Ctrl_total_ratio")
-SpaceTrooper::plotMetricHist(spe = specosm_pancreas, metric="log2Ctrl_total_ratio")
-
+g1 <- SpaceTrooper::plotMetricHist(spe = specosm_breast, metric="log2Ctrl_total_ratio")
+g2 <- SpaceTrooper::plotMetricHist(spe = specosm_pancreas, metric="log2Ctrl_total_ratio")
+ggsave(
+    filename=file.path(out_dir, "cosmx_breast_log2Ctrl_total_ratio_histogram.pdf"),
+    plot=g1,
+    device="pdf",
+    width=11.69,
+    height=8.27,
+    units="in"
+)
+ggsave(
+    filename=file.path(out_dir, "cosmx_pancreas_log2Ctrl_total_ratio_histogram.pdf"),
+    plot=g2,
+    device="pdf",
+    width=11.69,
+    height=8.27,
+    units="in"
+)
 ############################################################
 specosm_mb1 <- readCosmxSPE("/Users/inzirio/Downloads/CosMx_data/CosMx1k_MouseBrain1")
 specosm_mb2 <- readCosmxSPE("/Users/inzirio/Downloads/CosMx_data/CosMx1k_MouseBrain2")
@@ -417,6 +432,8 @@ specosm_mb2$QC_score_mb2_native <- specosm_mb2$QC_score
 mb1_model <- metadata(specosm_mb1)$QCScore_model
 mb2_model <- metadata(specosm_mb2)$QCScore_model
 
+saveRDS(specosm_mb1, file.path(out_dir, "specosm_mb1_with_native_qs.rds"))
+saveRDS(specosm_mb2, file.path(out_dir, "specosm_mb2_with_native_qs.rds"))
 specosm_mb1 <- applyQCScoreModel(
     spe=specosm_mb1,
     qcModel=mb2_model,
@@ -463,7 +480,7 @@ res_mb1 <- plot_qc_score_comparison(
     x_label="MouseBrain1 native QS",
     y_label="MouseBrain2-trained QS",
     title="CosMx MouseBrain1: native QS vs MouseBrain2-trained QS",
-    threshold=0.75,
+    threshold=NULL, #change to 0.75 if you want to visualize quadrants
     cor_method="spearman",
     output_file=file.path(
         out_dir,
@@ -477,7 +494,7 @@ res_mb2 <- plot_qc_score_comparison(
     x_label="MouseBrain2 native QS",
     y_label="MouseBrain1-trained QS",
     title="CosMx MouseBrain2: native QS vs MouseBrain1-trained QS",
-    threshold=0.75,
+    threshold=NULL, #change to 0.75 if you want to visualize quadrants
     cor_method="spearman",
     output_file=file.path(
         out_dir,
@@ -513,7 +530,7 @@ mb1_colored_plots <- lapply(color_vars, function(v) {
     )
 })
 names(mb1_colored_plots) <- color_vars
-
+mb1_colored_plots
 mb2_colored_plots <- lapply(color_vars, function(v) {
     plot_qc_score_coldata(
         x=specosm_mb2$QC_score_mb2_native,
@@ -533,6 +550,7 @@ mb2_colored_plots <- lapply(color_vars, function(v) {
 })
 names(mb2_colored_plots) <- color_vars
 mb2_colored_plots
+
 cosmx_mousebrain_transfer_summary <- data.frame(
     comparison=c(
         "MouseBrain1 native vs MouseBrain2-trained",
@@ -555,176 +573,3 @@ metadata(specosm_mb1)$QCScore_model$model_matrix_colnames
 metadata(specosm_mb2)$QCScore_model$model_matrix_colnames
 
 ####################
-
-spexen_bc1 <- readXeniumSPE("/Users/inzirio/Downloads/Xenium_data/Xenium_HumanBreast1_Janesick/")
-spexen_bc2 <- readXeniumSPE("/Users/inzirio/Downloads/Xenium_data/Xenium_HumanBreast2_Janesick")
-
-
-spexen_bc1 <- spatialPerCellQC(spexen_bc1)
-spexen_bc2 <- spatialPerCellQC(spexen_bc2)
-
-xenium_formula <- paste0(
-    "~(",
-    "log2SignalDensity + ",
-    "Area_um + ",
-    "log2AspectRatio + ",
-    "log2Ctrl_total_ratio",
-    ")^2"
-)
-
-spexen_bc1 <- computeQCScore(
-    spe=spexen_bc1,
-    modelFormula=xenium_formula,
-    verbose=TRUE
-)
-
-spexen_bc2 <- computeQCScore(
-    spe=spexen_bc2,
-    modelFormula=xenium_formula,
-    verbose=TRUE
-)
-
-spexen_bc1$QC_score_bc1_native <- spexen_bc1$QC_score
-spexen_bc2$QC_score_bc2_native <- spexen_bc2$QC_score
-
-bc1_model <- metadata(spexen_bc1)$QCScore_model
-bc2_model <- metadata(spexen_bc2)$QCScore_model
-
-spexen_bc1 <- applyQCScoreModel(
-    spe=spexen_bc1,
-    qcModel=bc2_model,
-    scoreName="QC_score_bc2_model"
-)
-
-spexen_bc2 <- applyQCScoreModel(
-    spe=spexen_bc2,
-    qcModel=bc1_model,
-    scoreName="QC_score_bc1_model"
-)
-
-cor_bc1_spearman <- cor(
-    spexen_bc1$QC_score_bc1_native,
-    spexen_bc1$QC_score_bc2_model,
-    use="complete.obs",
-    method="spearman"
-)
-
-cor_bc1_pearson <- cor(
-    spexen_bc1$QC_score_bc1_native,
-    spexen_bc1$QC_score_bc2_model,
-    use="complete.obs",
-    method="pearson"
-)
-
-cor_bc2_spearman <- cor(
-    spexen_bc2$QC_score_bc2_native,
-    spexen_bc2$QC_score_bc1_model,
-    use="complete.obs",
-    method="spearman"
-)
-
-cor_bc2_pearson <- cor(
-    spexen_bc2$QC_score_bc2_native,
-    spexen_bc2$QC_score_bc1_model,
-    use="complete.obs",
-    method="pearson"
-)
-
-res_bc1 <- plot_qc_score_comparison(
-    x=spexen_bc1$QC_score_bc1_native,
-    y=spexen_bc1$QC_score_bc2_model,
-    x_label="Breast Cancer 1 native QS",
-    y_label="Breast Cancer 2-trained QS",
-    title="Xenium Breast Cancer 1: native QS vs Breast Cancer 2-trained QS",
-    threshold=0.75,
-    cor_method="spearman",
-    output_file=file.path(
-        out_dir,
-        "xenium_breast1_native_vs_breast2_model_A4_landscape.pdf"
-    )
-)
-
-res_bc2 <- plot_qc_score_comparison(
-    x=spexen_bc2$QC_score_bc2_native,
-    y=spexen_bc2$QC_score_bc1_model,
-    x_label="Breast Cancer 2 native QS",
-    y_label="Breast Cancer 1-trained QS",
-    title="Xenium Breast Cancer 2: native QS vs Breast Cancer 1-trained QS",
-    threshold=0.75,
-    cor_method="spearman",
-    output_file=file.path(
-        out_dir,
-        "xenium_breast2_native_vs_breast1_model_A4_landscape.pdf"
-    )
-)
-
-res_bc1$plot
-res_bc2$plot
-
-color_vars <- c(
-    "log2SignalDensity",
-    "Area_um",
-    "log2AspectRatio",
-    "log2Ctrl_total_ratio"
-)
-
-bc1_colored_plots <- lapply(color_vars, function(v) {
-    plot_qc_score_coldata(
-        x=spexen_bc1$QC_score_bc1_native,
-        y=spexen_bc1$QC_score_bc2_model,
-        spe=spexen_bc1,
-        color_col=v,
-        x_label="Breast Cancer 1 native QS",
-        y_label="Breast Cancer 2-trained QS",
-        title=paste0("Breast Cancer 1 native vs Breast Cancer 2-trained QS: ", v),
-        threshold=0.75,
-        cor_method="spearman",
-        output_file=file.path(
-            out_dir,
-            paste0("xenium_breast1_native_vs_breast2_model_", v, ".pdf")
-        )
-    )
-})
-names(bc1_colored_plots) <- color_vars
-
-bc2_colored_plots <- lapply(color_vars, function(v) {
-    plot_qc_score_coldata(
-        x=spexen_bc2$QC_score_bc2_native,
-        y=spexen_bc2$QC_score_bc1_model,
-        spe=spexen_bc2,
-        color_col=v,
-        x_label="Breast Cancer 2 native QS",
-        y_label="Breast Cancer 1-trained QS",
-        title=paste0("Breast Cancer 2 native vs Breast Cancer 1-trained QS: ", v),
-        threshold=0.75,
-        cor_method="spearman",
-        output_file=file.path(
-            out_dir,
-            paste0("xenium_breast2_native_vs_breast1_model_", v, ".pdf")
-        )
-    )
-})
-names(bc2_colored_plots) <- color_vars
-
-xenium_breast_transfer_summary <- data.frame(
-    comparison=c(
-        "Breast Cancer 1 native vs Breast Cancer 2-trained",
-        "Breast Cancer 2 native vs Breast Cancer 1-trained"
-    ),
-    spearman=c(cor_bc1_spearman, cor_bc2_spearman),
-    pearson=c(cor_bc1_pearson, cor_bc2_pearson),
-    stringsAsFactors=FALSE
-)
-
-xenium_breast_transfer_summary
-
-write.csv(
-    xenium_breast_transfer_summary,
-    file=file.path(out_dir, "xenium_breast1_breast2_transfer_summary.csv"),
-    row.names=FALSE
-)
-
-metadata(spexen_bc1)$QCScore_model$model_matrix_colnames
-metadata(spexen_bc2)$QCScore_model$model_matrix_colnames
-
-########################
