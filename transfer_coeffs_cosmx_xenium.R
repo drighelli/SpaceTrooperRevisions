@@ -3,7 +3,8 @@ library(SpaceTrooper)
 # library(S4Vectors)
 
 set.seed(1998)
-
+out_dir <- "~/SpaceTrooper_qs_check1/transfer_coeffs_cosmx_xenium"
+dir.create(out_dir, showWarnings=FALSE, recursive=TRUE)
 common_formula <- "~(log2SignalDensity + Area_um + log2AspectRatio)^2"
 
 ## -----------------------------
@@ -35,7 +36,6 @@ summary(spexen$QC_score)
 metadata(spexen)$QCScore_model$model_formula
 metadata(spexen)$QCScore_model$model_matrix_colnames
 metadata(spexen)$QCScore_model$coefficients_table
-
 
 ## -----------------------------
 ## Read CosMx data
@@ -71,7 +71,8 @@ specosm$QC_score_cosmx_native <- specosm$QC_score
 
 xen_model <- metadata(spexen)$QCScore_model
 cosmx_model <- metadata(specosm)$QCScore_model
-
+saveRDS(spexen, file=file.path(out_dir, "spexen_with_qc_score.rds"))
+saveRDS(specosm, file=file.path(out_dir, "specosm_with_qc_score.rds"))
 ## -----------------------------
 ## Apply transferred models
 ## -----------------------------
@@ -176,13 +177,13 @@ res_xen <- plot_qc_score_comparison(
     y_label="CosMx-trained QC score",
     title="Xenium: native vs CosMx-trained QC score",
     cor_method = "pearson",
-    threshold=0.25,
-    output_file="~/SpaceTrooper_qs_check/xenium_native_vs_cosmx_model.pdf"
+    threshold=NULL, # set 0.25 to show quadrants
+    output_file=file.path(out_dir, "xenium_native_vs_cosmx_model.pdf")
 )
 
 res_xen$plot
 res_xen$correlation
-res_xen$quadrant_table
+# res_xen$quadrant_table
 
 res_cosmx <- plot_qc_score_comparison(
     x=specosm$QC_score_cosmx_native,
@@ -191,10 +192,10 @@ res_cosmx <- plot_qc_score_comparison(
     y_label="Xenium-trained QC score",
     title="CosMx: native vs Xenium-trained QC score",
     cor_method = "pearson",
-    threshold=0.75,
-    output_file="~/SpaceTrooper_qs_check/cosmx_native_vs_xenium_model.pdf"
+    threshold=NULL, # set 0.75 to show quadrants
+    output_file=file.path(out_dir, "cosmx_native_vs_xenium_model.pdf")
 )
 
 res_cosmx$plot
 res_cosmx$correlation
-res_cosmx$quadrant_table
+# res_cosmx$quadrant_table
