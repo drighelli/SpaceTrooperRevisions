@@ -1,9 +1,15 @@
-spexen_bc1 <- readXeniumSPE("/Users/inzirio/Downloads/Xenium_data/Xenium_HumanBreast1_Janesick/")
-spexen_bc2 <- readXeniumSPE("/Users/inzirio/Downloads/Xenium_data/Xenium_HumanBreast2_Janesick")
+# spexen_bc1 <- readXeniumSPE("/Users/inzirio/Downloads/Xenium_data/Xenium_HumanBreast1_Janesick/")
+# spexen_bc2 <- readXeniumSPE("/Users/inzirio/Downloads/Xenium_data/Xenium_HumanBreast2_Janesick")
+# spexen_bc1 <- spatialPerCellQC(spexen_bc1)
+# spexen_bc2 <- spatialPerCellQC(spexen_bc2)
+out_dir <- "~/SpaceTrooper_qs_check1/transfer_coeffs_xenium_xenium"
+dir.create(out_dir, showWarnings=FALSE, recursive=TRUE)
+spexen_bc1 <- readRDS("/Users/inzirio/Downloads/Xenium_data/Xenium_Janesick_human_DCIS_S1-Bottom_spe.rds")
+spexen_bc2 <- readRDS("/Users/inzirio/Downloads/Xenium_data/Xenium_Janesick_human_DCIS_S2-Bottom_spe.rds")
 
-
-spexen_bc1 <- spatialPerCellQC(spexen_bc1)
-spexen_bc2 <- spatialPerCellQC(spexen_bc2)
+###############
+spexen_bc1$QC_score <- NA
+spexen_bc2$QC_score <- NA
 
 xenium_formula <- paste0(
     "~(",
@@ -26,11 +32,14 @@ spexen_bc2 <- computeQCScore(
     verbose=TRUE
 )
 
+bc1_model <- metadata(spexen_bc1)$QCScore_model
+bc2_model <- metadata(spexen_bc2)$QCScore_model
+###############
 spexen_bc1$QC_score_bc1_native <- spexen_bc1$QC_score
 spexen_bc2$QC_score_bc2_native <- spexen_bc2$QC_score
 
-bc1_model <- metadata(spexen_bc1)$QCScore_model
-bc2_model <- metadata(spexen_bc2)$QCScore_model
+saveRDS(spexen_bc1, file=file.path(out_dir, "spexen_bc1_with_qc_score.rds"))
+saveRDS(spexen_bc2, file=file.path(out_dir, "spexen_bc2_with_qc_score.rds"))
 
 spexen_bc1 <- applyQCScoreModel(
     spe=spexen_bc1,
@@ -75,28 +84,28 @@ cor_bc2_pearson <- cor(
 res_bc1 <- plot_qc_score_comparison(
     x=spexen_bc1$QC_score_bc1_native,
     y=spexen_bc1$QC_score_bc2_model,
-    x_label="Breast Cancer 1 native QS",
-    y_label="Breast Cancer 2-trained QS",
-    title="Xenium Breast Cancer 1: native QS vs Breast Cancer 2-trained QS",
-    threshold=0.75,
+    x_label="DCIS S1 native QS",
+    y_label="DCIS S2 trained QS",
+    title="Xenium DCIS S1: native QS vs DCIS S2-trained QS",
+    threshold=NULL, # set 0.75 to show quadrants
     cor_method="spearman",
     output_file=file.path(
         out_dir,
-        "xenium_breast1_native_vs_breast2_model_A4_landscape.pdf"
+        "xenium_dcis1_native_vs_dcis2_model_A4_landscape.pdf"
     )
 )
 
 res_bc2 <- plot_qc_score_comparison(
     x=spexen_bc2$QC_score_bc2_native,
     y=spexen_bc2$QC_score_bc1_model,
-    x_label="Breast Cancer 2 native QS",
-    y_label="Breast Cancer 1-trained QS",
-    title="Xenium Breast Cancer 2: native QS vs Breast Cancer 1-trained QS",
-    threshold=0.75,
+    x_label="DCIS S2 native QS",
+    y_label="DCIS S1 trained QS",
+    title="Xenium DCIS S2: native QS vs DCIS S1-trained QS",
+    threshold=NULL, # set 0.75 to show quadrants
     cor_method="spearman",
     output_file=file.path(
         out_dir,
-        "xenium_breast2_native_vs_breast1_model_A4_landscape.pdf"
+        "xenium_dcis2_native_vs_dcis1_model_A4_landscape.pdf"
     )
 )
 
@@ -116,14 +125,14 @@ bc1_colored_plots <- lapply(color_vars, function(v) {
         y=spexen_bc1$QC_score_bc2_model,
         spe=spexen_bc1,
         color_col=v,
-        x_label="Breast Cancer 1 native QS",
-        y_label="Breast Cancer 2-trained QS",
-        title=paste0("Breast Cancer 1 native vs Breast Cancer 2-trained QS: ", v),
-        threshold=0.75,
+        x_label="DCIS S1 native QS",
+        y_label="DCIS S2 trained QS",
+        title=paste0("DCIS S1 native vs DCIS S2-trained QS: ", v),
+        threshold=NULL, # set 0.75 to show quadrants
         cor_method="spearman",
         output_file=file.path(
             out_dir,
-            paste0("xenium_breast1_native_vs_breast2_model_", v, ".pdf")
+            paste0("xenium_dcis1_native_vs_dcis2_model_", v, ".pdf")
         )
     )
 })
@@ -135,14 +144,14 @@ bc2_colored_plots <- lapply(color_vars, function(v) {
         y=spexen_bc2$QC_score_bc1_model,
         spe=spexen_bc2,
         color_col=v,
-        x_label="Breast Cancer 2 native QS",
-        y_label="Breast Cancer 1-trained QS",
-        title=paste0("Breast Cancer 2 native vs Breast Cancer 1-trained QS: ", v),
-        threshold=0.75,
+        x_label="DCIS S2 native QS",
+        y_label="DCIS S1 trained QS",
+        title=paste0("DCIS S2 native vs DCIS S1-trained QS: ", v),
+        threshold=NULL, # set 0.75 to show quadrants
         cor_method="spearman",
         output_file=file.path(
             out_dir,
-            paste0("xenium_breast2_native_vs_breast1_model_", v, ".pdf")
+            paste0("xenium_dcis2_native_vs_dcis1_model_", v, ".pdf")
         )
     )
 })
@@ -150,8 +159,8 @@ names(bc2_colored_plots) <- color_vars
 
 xenium_breast_transfer_summary <- data.frame(
     comparison=c(
-        "Breast Cancer 1 native vs Breast Cancer 2-trained",
-        "Breast Cancer 2 native vs Breast Cancer 1-trained"
+        "DCIS S1 native vs DCIS S2-trained",
+        "DCIS S2 native vs DCIS S1-trained"
     ),
     spearman=c(cor_bc1_spearman, cor_bc2_spearman),
     pearson=c(cor_bc1_pearson, cor_bc2_pearson),
@@ -174,13 +183,10 @@ metadata(spexen_bc2)$QCScore_model$model_matrix_colnames
 dbkx_path <- "~/Downloads/Xenium_data/db_kero_xen"
 
 spexen <- readXeniumSPE(dbkx_path)
-spexen_bc1 <- readXeniumSPE("/Users/inzirio/Downloads/Xenium_data/Xenium_HumanBreast1_Janesick/")
-
-
-
 spexen <- spatialPerCellQC(spexen)
-spexen_bc1 <- spatialPerCellQC(spexen_bc1)
-
+# spexen_bc1 <- readXeniumSPE("/Users/inzirio/Downloads/Xenium_data/Xenium_HumanBreast1_Janesick/")
+# spexen_bc1 <- spatialPerCellQC(spexen_bc1)
+spexen_bc1
 xenium_formula <- paste0(
     "~(",
     "log2SignalDensity + ",
@@ -196,11 +202,11 @@ spexen <- computeQCScore(
     verbose=TRUE
 )
 
-spexen_bc1 <- computeQCScore(
-    spe=spexen_bc1,
-    modelFormula=xenium_formula,
-    verbose=TRUE
-)
+# spexen_bc1 <- computeQCScore(
+#     spe=spexen_bc1,
+#     modelFormula=xenium_formula,
+#     verbose=TRUE
+# )
 
 spexen$QC_score_dbk_native <- spexen$QC_score
 spexen_bc1$QC_score_bc1_native <- spexen_bc1$QC_score
@@ -252,27 +258,27 @@ res_dbk <- plot_qc_score_comparison(
     x=spexen$QC_score_dbk_native,
     y=spexen$QC_score_bc1_model,
     x_label="DBK Xenium native QS",
-    y_label="Breast 1-trained QS",
-    title="Xenium DBK: native QS vs Breast 1-trained QS",
-    threshold=0.75,
+    y_label="DCIS S1-trained QS",
+    title="Xenium DBK: native QS vs DCIS S1-trained QS",
+    threshold=NULL, # set 0.75 to show quadrants
     cor_method="spearman",
     output_file=file.path(
         out_dir,
-        "xenium_dbk_native_vs_breast1_model_A4_landscape.pdf"
+        "xenium_dbk_native_vs_dcis1_model_A4_landscape.pdf"
     )
 )
 
 res_bc1 <- plot_qc_score_comparison(
     x=spexen_bc1$QC_score_bc1_native,
     y=spexen_bc1$QC_score_dbk_model,
-    x_label="Breast 1 native QS",
+    x_label="DCIS S1 native QS",
     y_label="DBK-trained QS",
-    title="Xenium Breast 1: native QS vs DBK-trained QS",
-    threshold=0.75,
+    title="Xenium DCIS S1: native QS vs DBK-trained QS",
+    threshold=NULL, # set 0.75 to show quadrants
     cor_method="spearman",
     output_file=file.path(
         out_dir,
-        "xenium_breast1_native_vs_dbk_model_A4_landscape.pdf"
+        "xenium_dcis1_native_vs_dbk_model_A4_landscape.pdf"
     )
 )
 
@@ -293,13 +299,13 @@ dbk_colored_plots <- lapply(color_vars, function(v) {
         spe=spexen,
         color_col=v,
         x_label="DBK Xenium native QS",
-        y_label="Breast 1-trained QS",
-        title=paste0("DBK Xenium native vs Breast 1-trained QS: ", v),
-        threshold=0.75,
+        y_label="DCIS S1-trained QS",
+        title=paste0("DBK Xenium native vs DCIS S1-trained QS: ", v),
+        threshold=NULL, # set 0.75 to show quadrants
         cor_method="spearman",
         output_file=file.path(
             out_dir,
-            paste0("xenium_dbk_native_vs_breast1_model_", v, ".pdf")
+            paste0("xenium_dbk_native_vs_dcis1_model_", v, ".pdf")
         )
     )
 })
@@ -311,34 +317,34 @@ bc1_colored_plots <- lapply(color_vars, function(v) {
         y=spexen_bc1$QC_score_dbk_model,
         spe=spexen_bc1,
         color_col=v,
-        x_label="Breast 1 native QS",
+        x_label="DCIS S1 native QS",
         y_label="DBK-trained QS",
-        title=paste0("Breast 1 native vs DBK-trained QS: ", v),
-        threshold=0.75,
+        title=paste0("DCIS S1 native vs DBK-trained QS: ", v),
+        threshold=NULL, # set 0.75 to show quadrants
         cor_method="spearman",
         output_file=file.path(
             out_dir,
-            paste0("xenium_breast1_native_vs_dbk_model_", v, ".pdf")
+            paste0("xenium_dcis1_native_vs_dbk_model_", v, ".pdf")
         )
     )
 })
 names(bc1_colored_plots) <- color_vars
 
-xenium_dbk_breast1_transfer_summary <- data.frame(
+xenium_dbk_dcis1_transfer_summary <- data.frame(
     comparison=c(
-        "DBK Xenium native vs Breast 1-trained",
-        "Breast 1 native vs DBK-trained"
+        "DBK Xenium native vs DCIS S1-trained",
+        "DCIS S1 native vs DBK-trained"
     ),
     spearman=c(cor_dbk_spearman, cor_bc1_spearman),
     pearson=c(cor_dbk_pearson, cor_bc1_pearson),
     stringsAsFactors=FALSE
 )
 
-xenium_dbk_breast1_transfer_summary
+xenium_dbk_dcis1_transfer_summary
 
 write.csv(
-    xenium_dbk_breast1_transfer_summary,
-    file=file.path(out_dir, "xenium_dbk_breast1_transfer_summary.csv"),
+    xenium_dbk_dcis1_transfer_summary,
+    file=file.path(out_dir, "xenium_dbk_dcis1_transfer_summary.csv"),
     row.names=FALSE
 )
 
